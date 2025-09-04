@@ -7,6 +7,8 @@ import scrapy
 
 
 class YeuItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
+    title_debug = scrapy.Field()
+    date = scrapy.Field()
+    horaire_link = scrapy.Field()
+    arrival = scrapy.Field()
     pass

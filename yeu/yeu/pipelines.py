@@ -10,4 +10,6 @@ from itemadapter import ItemAdapter
 
 class YeuPipeline:
     def process_item(self, item, spider):
+
+        print("\n[-] Analysing date : " + item['date'][0])
         return item
