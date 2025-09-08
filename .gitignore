@@ -7,7 +7,19 @@
 # - sncf_api.py
 # - requirements.txt
 # Everything else in project root is ignored by default.
+
 *
+!.gitignore
+!README.md
+!requirements.txt
+
+# Unignore the main folders
+!yeu/
+!yeu/yeu/
+!yeu/yeu/spiders/
+!sncf/
+
+# Keep only key files
 !yeu/scrapy.cfg
 !yeu/yeu/items.py
 !yeu/yeu/middlewares.py
@@ -15,6 +27,3 @@
 !yeu/yeu/settings.py
 !yeu/yeu/spiders/yc_boat_spider.py
 !sncf/sncf_api.py
-!requirements.txt
-!.gitignore
-!README.md
