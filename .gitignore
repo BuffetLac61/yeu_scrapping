@@ -1,0 +1,71 @@
+# ============================
+# Python general
+# ============================
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ============================
+# Scrapy specific
+# ============================
+# Logs
+*.log
+logs/
+
+# Scrapy cache (contains HTTP responses)
+.scrapy/
+
+# Output files (when using -o data.json, etc.)
+*.json
+*.jsonl
+*.jl
+*.csv
+*.xml
+*.txt
+
+# ============================
+# OS junk files
+# ============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ============================
+# Project: Keep only key files
+# ============================
+# You said you want to keep:
+# - spiders/ (your spiders)
+# - pipelines.py
+# - sncf_api.py
+# - requirements.txt
+# Everything else in project root is ignored by default.
+*
+!yeu/scrapy.cfg
+!yeu/yeu/items.py
+!yeu/yeu/middlewares.py
+!yeu/yeu/pipelines.py
+!yeu/yeu/settings.py
+!yeu/yeu/spiders/yc_boat_spider.py
+!sncf/sncf_api.py
+!requirements.txt
+!.gitignore
+!README.md
