@@ -1,0 +1,50 @@
+# Byte-compiled / cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# Distribution / packaging
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Logs
+*.log
+
+# IDE / editor stuff
+.vscode/
+.idea/
+*.swp
+
+# Scrapyd deployments
+.scrapy/
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Local virtualenv
+bin/
+lib/
+lib64/
+pyvenv.cfg
+
+# Outputted json files
+*.json
+
+# Docker Image maker
+Dockerfile
+.dockerignore
