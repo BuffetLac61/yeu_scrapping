@@ -8,9 +8,9 @@
 from itemadapter import ItemAdapter
 import re
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
-# Robust month map (accents handled)
+# Robust month map (with or without accents exception handled)
 MONTHS = {
     "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5,
     "juin": 6, "juillet": 7, "août": 8, "aout": 8, "septembre": 9,
@@ -20,16 +20,16 @@ MONTHS = {
 class YeuPipeline:
 
     def _parse_text_date(self, raw_date: str, fallback_year: int):
-        # e.g. "Lundi 01 Septembre"
+        # par exemlpe : "Lundi 01 Septembre"
         m = re.search(r"(\d{1,2})\s+([A-Za-zÀ-ÿ]+)", (raw_date or ""))
         if not m:
-            print(f"[!] Debug message: couldn't parse text date from: {raw_date!r}")
+            print(f"[!] Couldn't parse text date from: {raw_date!r}")
             return None
         day = int(m.group(1))
         month_name = m.group(2).lower()
         month = MONTHS.get(month_name)
         if not month:
-            print(f"[!] Debug message: unknown month name: {month_name!r}")
+            print(f"[!] Unknown month name: {month_name!r}")
             return None
         return datetime(fallback_year, month, day)
     
@@ -44,6 +44,9 @@ class YeuPipeline:
           "horaire_link": ["/ws?func=set_args&voyage=2VERS1&date[]=20250901.630"],
           "arrival": ["Arrivée à Yeu vers 07:00"]
         }
+        We are going to extract starting location , arrival loation and departure datetime from "horaire_link" field.
+        We are going to extract arrival time from 'arrival' field
+        We are going to auto check our regex using the date field (double check basically...)
         """
         print("\n[-] Analysing date : " + item['date'][0])
         raw_date = (item.get("date") or [""])[0]
@@ -53,7 +56,7 @@ class YeuPipeline:
         # Parse YYYYMMDD.HHMM (HHMM can be 3 or 4 digits; last two are minutes)
         m = re.search(r"date\[\]=(?P<date>\d{8})\.(?P<hhmm>\d{1,4})", raw_link)
         if not m:
-            print(f"[!] Debug message: horaire_link does not match expected pattern: {raw_link!r}")
+            print(f"[!] horaire_link field does not match expected pattern: {raw_link!r}")
             return {"departure_time": None, "arrival_time": None, "nb_transfers": 0}
 
         date_str = m.group("date")  # "20250901"
@@ -66,7 +69,7 @@ class YeuPipeline:
         minutes = int(hhmm[-2:])
         hours = int(hhmm[:-2] or "0")
         if hours > 23 or minutes > 59:
-            print(f"[!] Debug message: invalid hhmm '{hhmm}' in link {raw_link!r}")
+            print(f"[!] Invalid hhmm '{hhmm}' in link {raw_link!r}")
 
         departure_time = datetime(year, month_link, day_link, hours, minutes)
 
@@ -75,13 +78,13 @@ class YeuPipeline:
         if text_date_dt:
             if (text_date_dt.year, text_date_dt.month, text_date_dt.day) != (year, month_link, day_link):
                 print(
-                    f"[!] Debug message: date mismatch - "
+                    f"[!] Date mismatch - "
                     f"link={year:04d}-{month_link:02d}-{day_link:02d} "
                     f"vs text={text_date_dt:%Y-%m-%d} "
                     f"(raw_date={raw_date!r}, link={raw_link!r})"
                 )
         else:
-            print(f"[!] Debug message: skipping text-date check (couldn't parse) for raw_date={raw_date!r}")
+            print(f"[!] Skipping text-date check (couldn't parse) for raw_date={raw_date!r}")
 
         # Arrival time (same day by default; roll over if needed)
         m2 = re.search(r"(\d{1,2}):(\d{2})", raw_arrival or "")
@@ -91,12 +94,12 @@ class YeuPipeline:
             if arrival_time < departure_time:
                 arrival_time += timedelta(days=1)  # handle over-midnight edge case
         else:
-            print(f"[!] Debug message: couldn't parse arrival time from: {raw_arrival!r}")
+            print(f"[!] Couldn't parse arrival time from: {raw_arrival!r}")
             arrival_time = None
 
-        # Same schema as your SNCF dataframe
-        return {
-            "departure_time": pd.to_datetime(departure_time) if departure_time else None,
-            "arrival_time": pd.to_datetime(arrival_time) if arrival_time else None,
-            "nb_transfers": 0
-        }
+        item["departure_time"] = pd.to_datetime(departure_time).strftime("%Y-%m-%dT%H:%M:%S") if departure_time else None
+        item["arrival_time"] = pd.to_datetime(arrival_time).strftime("%Y-%m-%dT%H:%M:%S") if arrival_time else None
+        item["nb_transfers"] = 0
+
+        # Same schema as the SNCF dataframe
+        return item

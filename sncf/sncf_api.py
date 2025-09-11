@@ -15,7 +15,7 @@ departure_name = 'paris'
 departure = code_insee[departure_name]
 arrival_name = 'fromentine_la_barre-de-monts'
 arrival = code_insee[arrival_name]
-aaaa_mm_dd = '20250909'
+aaaa_mm_dd = '20250930'
 hhmmss = '070000'
 logic = 'arrival' # (or departure) Here we want to align this with the earliest arrival time at Fromentine la Barre de Monts
 min_options = 8
@@ -30,7 +30,7 @@ r = requests.get(url=URL, headers=HEADERS)
 
 data = r.json()
 
-with open ('sncf_output.json', 'w') as j:
+with open ('sncf_outputraw.json', 'w') as j:
     json.dump(data, j, indent =4)
 
 
@@ -48,10 +48,22 @@ for j in journeys:
 # Convert to DataFrame
 df = pd.DataFrame(records)
 
-# (Optional) Format datetime strings into pandas datetime objects
+# Format datetime strings into pandas datetime objects
 df["departure_time"] = pd.to_datetime(df["departure_time"], format="%Y%m%dT%H%M%S")
 df["arrival_time"] = pd.to_datetime(df["arrival_time"], format="%Y%m%dT%H%M%S")
 df["target_arrival_time"] = pd.to_datetime(f"{aaaa_mm_dd}T{hhmmss}", format="%Y%m%dT%H%M%S")
 df["departure_name"] = departure_name
 df["arrival_name"] = arrival_name
-print(df)
+
+# REFormat them into string YYYY-MM-DD HH:MM:SS to stick to spider scrapy output items format
+df["departure_time"] = df["departure_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+df["arrival_time"] = df["arrival_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+df["target_arrival_time"] = df["target_arrival_time"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+json_str = df.to_json(orient="records", date_format="iso", indent=1)
+
+# Write to a file
+with open("sncf_output.json", "w", encoding="utf-8") as f:
+    f.write(json_str)
+
+print("[+] JSON file saved as sncf_output.json")
