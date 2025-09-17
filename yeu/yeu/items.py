@@ -17,3 +17,6 @@ class YeuItem(scrapy.Item):
     departure_time = scrapy.Field()
     arrival_time = scrapy.Field()
     nb_transfers = scrapy.Field()
+    departure_name = scrapy.Field()
+    arrival_name = scrapy.Field()
+    details = scrapy.Field() 

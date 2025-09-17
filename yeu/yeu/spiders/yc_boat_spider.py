@@ -1,12 +1,22 @@
 import scrapy
 from ..items import YeuItem
+from datetime import datetime
 
 class YCBoatSpider(scrapy.Spider):
     name = "yc_boat"
-    start_urls = [
-        'https://resa3.yeu-continent.fr/passages.php?date_debut=01/09/2025&type=mois'
-    ]
 
+    def __init__(self, date=None, *args, **kwargs):
+        """"Redefining the __init__ scrapy spider builder to dynamically construct the url according to the month of reservation checked"""
+        super().__init__(*args, **kwargs) # calling parent constructor as we are redefining le __init__ localement
+        if date:
+            try:
+                parsed_input_date = datetime.strptime(date, "%d/%m/%Y")
+            except ValueError:
+                raise ValueError("[!] Input Date for yc_boat spider must be in DD/MM/YYYY format")
+            self.start_urls = [f'https://resa3.yeu-continent.fr/passages.php?date_debut={date}&type=mois']
+        else:
+            raise ValueError("[!] You must provide a date argument to yc_boat spider in DD/MM/YYYY format")
+    
     def parse(self, response):
 
         title = response.css('title::text').extract()

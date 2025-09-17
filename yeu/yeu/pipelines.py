@@ -101,5 +101,25 @@ class YeuPipeline:
         item["arrival_time"] = pd.to_datetime(arrival_time).strftime("%Y-%m-%dT%H:%M:%S") if arrival_time else None
         item["nb_transfers"] = 0
 
+                # New part: extract voyage direction from horaire_link
+        voyage_match = re.search(r"voyage=(\dVERS\d)", raw_link)
+        if voyage_match:
+            voyage = voyage_match.group(1)
+            if voyage == "1VERS2":
+                item["departure_name"] = "yeu"
+                item["arrival_name"] = "fromentine_la_barre-de-monts"
+                item["details"] = "yeu -> fromentine_la_barre-de-monts"
+            elif voyage == "2VERS1":
+                item["departure_name"] = "fromentine_la_barre-de-monts"
+                item["arrival_name"] = "yeu"
+                item["details"] = "fromentine_la_barre-de-monts -> yeu"
+            else:
+                item["departure_name"] = None
+                item["arrival_name"] = None
+        else:
+            print(f"[!] Couldn't parse voyage from horaire_link: {raw_link!r}")
+            item["departure_name"] = None
+            item["arrival_name"] = None
+
         # Same schema as the SNCF dataframe
         return item
