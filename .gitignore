@@ -27,6 +27,8 @@
 !yeu/yeu/settings.py
 !yeu/yeu/spiders/yc_boat_spider.py
 !sncf/sncf_api.py
+!set_python_env.sh
+!itinerator.py
 
 # Keeping Docker Image builder files
 !Dockerfile

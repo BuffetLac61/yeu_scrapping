@@ -3,8 +3,8 @@ import json
 import pandas as pd
 import sys
 #api_key = '1fd10942-b3bb-481e-807a-7bd09c4ed64a'
-if len(sys.argv) != 6:
-    raise ValueError("You must provide exactly 5 arguments: api_key, departure_name(paris/nantes/fromentine_la_barre-de-monts) , arrival_name (idem...), date (aaaammdd), time (hhmmss)")
+if len(sys.argv) != 8:
+    raise ValueError("You must provide exactly 5 arguments: api_key, departure_name(paris/nantes/fromentine_la_barre-de-monts) , arrival_name (idem...), date (aaaammdd), time (hhmmss), logic (departure/arrival), output json file (output.json)")
 
 api_key = sys.argv[1]
 
@@ -21,7 +21,9 @@ arrival_name = sys.argv[3]
 arrival = code_insee[arrival_name]
 aaaammdd = sys.argv[4]
 hhmmss = sys.argv[5]
-logic = 'arrival' # (or departure) Here we want to align this with the earliest arrival time at Fromentine la Barre de Monts
+logic = sys.argv[6] # (or departure) Arrival means we want to align this with the closest arrival time to the target time
+output_file = sys.argv[7]
+
 min_options = 8
 URL = f'https://api.sncf.com/v1/coverage/sncf/journeys?from=admin:fr:{departure}&to=admin:fr:{arrival}&datetime={aaaammdd}T{hhmmss}&datetime_represents={logic}&min_nb_journeys={min_options}'
 
@@ -80,7 +82,7 @@ df["target_arrival_time"] = df["target_arrival_time"].dt.strftime("%Y-%m-%dT%H:%
 json_str = df.to_json(orient="records", date_format="iso", indent=1)
 
 # Write to a file
-with open("sncf_output.json", "w", encoding="utf-8") as f:
+with open(output_file, "w", encoding="utf-8") as f: 
     f.write(json_str)
 
 print("[+] JSON file saved as sncf_output.json")
