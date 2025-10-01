@@ -84,12 +84,12 @@ def choose_best_connection(
         valid = [(i, o) for i, o in enumerate(options) if parse_iso(o["arrival_time"]) <= target]
         if not valid:
             return None
-        return min(valid, key=lambda x: parse_iso(x[1]["arrival_time"]) - target)
+        return min(valid, key=lambda x: abs(parse_iso(x[1]["arrival_time"]) - target))
     else:
         valid = [(i, o) for i, o in enumerate(options) if parse_iso(o["departure_time"]) >= target]
         if not valid:
             return None
-        return min(valid, key=lambda x: parse_iso(x[1]["departure_time"]) - target)
+        return min(valid, key=lambda x: abs(parse_iso(x[1]["departure_time"]) - target))
 
 
 
@@ -138,7 +138,9 @@ def plan_voyage_outbound(sncf_token: str, user_start: datetime, boats: List[Dict
                     results.append(chosen_boat)
                     results.append(chosen_car)
                     results.append(chosen_train)
+
                 elif chosen_idx_train is None:
+                    print(f"[!] No train found with arrival before car departure : {car_dt} and departure after user start voyage : {user_start}, trying next car option")
                     car_options.pop(idx_car) # We remove this car option and try again without this last non viable option
                     chosen_idx_car = choose_best_connection(car_options, boat_dt, mode="arrival") # We do the same loop with the next best car option (if no options is found in car_otptions, chosen_idx_car will be None and the loop will try the next boat due to the break condition) (if car_options is empty chosen_idx_car will be None and the loop will try the next boat option as len(car_otpiions will be 0)
         
@@ -193,6 +195,7 @@ def plan_voyage_return(sncf_token: str, user_end: datetime, boats: List[Dict[str
                     results.append(chosen_car)
                     results.append(chosen_train)
                 elif chosen_idx_train is None:
+                    print(f"[!] No train found between with arrival after car departure : {car_dt} and departure before user end voyage : {user_start}, trying next car option")
                     car_options.pop(idx_car) # We remove this car option and try again without this last non viable option
                     chosen_idx_car = choose_best_connection(car_options, boat_dt, mode="departure") # We do the same loop with the next best car option (if no options is found in car_otptions, chosen_idx_car will be None and the loop will try the next boat due to the break condition) (if car_options is empty chosen_idx_car will be None and the loop will try the next boat option as len(car_otpiions will be 0)
         
@@ -207,8 +210,8 @@ if __name__ == "__main__":
     sncf_token = "1fd10942-b3bb-481e-807a-7bd09c4ed64a"
 
     # User inputs
-    user_start = datetime(2025, 10, 10, 19, 0, 0)  # Available at Paris Montparnasse
-    user_end = datetime(2025, 10, 15, 8, 30, 0)   # Must be back at Paris Montparnasse
+    user_start = datetime(2025, 11, 7, 18, 30, 0)  # Available at Paris Montparnasse
+    user_end = datetime(2025, 11, 11, 19, 00, 0)   # Must be back at Paris Montparnasse
 
     run_boat_spider(user_start.strftime("%d/%m/%Y"))
 
