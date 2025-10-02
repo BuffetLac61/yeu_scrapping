@@ -40,6 +40,14 @@ if __name__ == "__main__":
     with open ('sncf_outputraw.json', 'w') as j:
         json.dump(data, j, indent =4)
 
+    # Check for Date Out Of Bound Error
+    if "error" in data:
+        if data["error"].get("id") == "date_out_of_bounds":
+            print("[!] Date out of bounds error. SNCF API only allows to query up to 2 months in advance.")
+            sys.exit(4)
+        else:
+            print(f"[!] SNCF API returned an unexpected error: {data['error']}")
+            sys.exit(3)
 
     journeys = data.get("journeys", [])
 

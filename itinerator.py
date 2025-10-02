@@ -5,6 +5,8 @@ from typing import List, Dict, Any, Optional
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
+import argparse
+
 def run_sncf_api(
     sncf_token: str, dep: str, arr: str,
     target_dt: datetime, logic: str,
@@ -23,10 +25,13 @@ def run_sncf_api(
     if res.returncode == 5:
         print(f"[!] No suitable voyage found")
         return []
-    
+    if res.returncode == 4:
+        print(f"[!] Date out of bounds error. SNCF API only allows to query up to 20 days in advance.")
+        return "sncf_error_date_out_of_bounds"
+
     if res.returncode != 0:
         print(f"[!] SNCF API error: {res.stderr}")
-        return []
+        return "sncf_error_unexpected"
 
     try:
         with open(f"./sncf/{output_file}","r", encoding="utf-8") as f:
@@ -34,6 +39,7 @@ def run_sncf_api(
     except Exception as e:
         print(f"[!] Failed to load {output_file}: {e}")
         return []
+
 
 def run_boat_spider(date_str: str) -> List[Dict[str, Any]]:
     """
@@ -61,9 +67,9 @@ def run_boat_spider(date_str: str) -> List[Dict[str, Any]]:
         print(f"[!] Failed to load boats.json: {e}")
         return []
 
+
 def parse_iso(dt_str: str) -> datetime:
     return datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
-
 
 
 def choose_best_connection(
@@ -92,7 +98,6 @@ def choose_best_connection(
         return min(valid, key=lambda x: abs(parse_iso(x[1]["departure_time"]) - target))
 
 
-
 def plan_voyage_outbound(sncf_token: str, user_start: datetime, boats: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     results = []
 
@@ -115,6 +120,8 @@ def plan_voyage_outbound(sncf_token: str, user_start: datetime, boats: List[Dict
         # Car Nantes -> Fromentine. Car arrival (arrival logic for SNCF API) aligned with boat departure time
         boat_dt = parse_iso(chosen_boat["departure_time"])
         car_options = run_sncf_api(sncf_token, "nantes", "fromentine_la_barre-de-monts", boat_dt, "arrival", "car_outbound.json")
+        if car_options == "sncf_error_date_out_of_bounds" or car_options == "sncf_error_unexpected":
+            return car_options # We propagate the error and stop the whole planning if the user is trying to plann too far compared to what sncf api is capable of or if the API is down
         car_options = [c for c in car_options if parse_iso(c["arrival_time"]) <= boat_dt - timedelta(minutes=5)] # We need to arrive at least 5min before the boat departure
         chosen_idx_car = choose_best_connection(car_options, boat_dt, mode="arrival") # index and option found or None if no car found
         
@@ -128,6 +135,8 @@ def plan_voyage_outbound(sncf_token: str, user_start: datetime, boats: List[Dict
                 # Train Paris -> Nantes aligned with car departure
                 car_dt = parse_iso(chosen_car["departure_time"])
                 train_options = run_sncf_api(sncf_token, "paris", "nantes", car_dt, "arrival", "train_outbound.json")
+                if train_options == "sncf_error_date_out_of_bounds" or train_options == "sncf_error_unexpected":
+                    return train_options # We propagate the error and stop the whole planning if the user is trying to plann too far compared to what sncf api is capable of or if the API is down
                 train_options = [t for t in train_options if parse_iso(t["arrival_time"]) <= car_dt - timedelta(minutes=5)] # We need to arrive at least 5min before the car departure
                 train_options = [t for t in train_options if parse_iso(t["departure_time"]) >= user_start] # We need to depart after user_start (when the user can be at earliest at Paris Montparnasse)
                 chosen_idx_train = choose_best_connection(train_options, car_dt, mode="arrival")
@@ -171,6 +180,8 @@ def plan_voyage_return(sncf_token: str, user_end: datetime, boats: List[Dict[str
         # Car Nantes -> Fromentine. Car arrival (arrival logic for SNCF API) aligned with boat departure time
         boat_dt = parse_iso(chosen_boat["arrival_time"])
         car_options = run_sncf_api(sncf_token, "fromentine_la_barre-de-monts", "nantes", boat_dt, "departure", "car_return.json")
+        if car_options == "sncf_error_date_out_of_bounds" or car_options == "sncf_error_unexpected":
+            return car_options # We propagate the error and stop the whole planning if the user is trying to plan too far compared to what sncf api is capable of or if the API is down
         car_options = [c for c in car_options if parse_iso(c["departure_time"]) >= boat_dt + timedelta(minutes=5)] # We need to depart at least 5min after the boat arrival
         chosen_idx_car = choose_best_connection(car_options, boat_dt, mode="departure") # index and option found or None if no car found
         
@@ -184,6 +195,8 @@ def plan_voyage_return(sncf_token: str, user_end: datetime, boats: List[Dict[str
                 # Train Nantes -> Paris aligned with car arrival
                 car_dt = parse_iso(chosen_car["arrival_time"])
                 train_options = run_sncf_api(sncf_token, "nantes", "paris", car_dt, "departure", "train_return.json")
+                if train_options == "sncf_error_date_out_of_bounds" or train_options == "sncf_error_unexpected":
+                    return train_options # We propagate the error and stop the whole planning if the user is trying to plann too far compared to what sncf api is capable of or if the API is down                
                 train_options = [t for t in train_options if parse_iso(t["arrival_time"]) >= car_dt + timedelta(minutes=5)] # We need to depart at least 5min after the car arrival
                 train_options = [t for t in train_options if parse_iso(t["departure_time"]) <= user_end] # We need to arrive before user_end (when the user can be at latest at Paris Montparnasse)
                 chosen_idx_train = choose_best_connection(train_options, car_dt, mode="departure")
@@ -207,11 +220,25 @@ def plan_voyage_return(sncf_token: str, user_end: datetime, boats: List[Dict[str
 
 if __name__ == "__main__":
     # Example usage
-    sncf_token = "1fd10942-b3bb-481e-807a-7bd09c4ed64a"
+    #sncf_token = "Don't steal my token :), get your own at https://www.digital.sncf.com/startup/api"
+    #user_start = datetime(2025, 10, 16, 17, 15, 0)  # Available at Paris Montparnasse
+    #user_end = datetime(2025, 10, 20, 13, 00, 0)   # Must be back at Paris Montparnasse
 
-    # User inputs
-    user_start = datetime(2025, 11, 7, 18, 30, 0)  # Available at Paris Montparnasse
-    user_end = datetime(2025, 11, 11, 19, 00, 0)   # Must be back at Paris Montparnasse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("api_key", help="API key for authentication")
+    parser.add_argument("--start", required=True, type=datetime.fromisoformat, help="Start datetime (YYYY-MM-DDTHH:MM:SS)")
+    parser.add_argument("--end", required=True, type=datetime.fromisoformat, help="End datetime (YYYY-MM-DDTHH:MM:SS)")
+
+    args = parser.parse_args()
+
+    print("API Key:", args.api_key)
+    print("Start:", args.start)
+    print("End:", args.end)
+
+    sncf_token = args.api_key
+    user_start = args.start  # Available at Paris Montparnasse
+    user_end = args.end   # Must be back at Paris Montparnasse
+
 
     run_boat_spider(user_start.strftime("%d/%m/%Y"))
 
@@ -220,7 +247,19 @@ if __name__ == "__main__":
         boats = json.load(f)
 
     final_plan_outbound = plan_voyage_outbound(sncf_token, user_start, boats)
+    if final_plan_outbound == "sncf_error_date_out_of_bounds" :
+        print("[!] Date out of bounds error during outbound planning. SNCF API only allows to query up to 20 days in advance.")
+        exit(4)
+    if final_plan_outbound == "sncf_error_unexpected" :
+        print("[!] Unexpected SNCF API error during outbound planning.")
+        exit(3)
     final_plan_return = plan_voyage_return(sncf_token, user_end, boats)
+    if final_plan_return == "sncf_error_date_out_of_bounds" :
+        print("[!] Date out of bounds error during return planning. SNCF API only allows to query up to 20 days in advance.")
+        exit(4)
+    if final_plan_return == "sncf_error_unexpected" :
+        print("[!] Unexpected SNCF API error during return planning.")
+        exit(3)
 
     # Save summary
     with open("final_voyage_plan_outbound.json", "w", encoding="utf-8") as f:
