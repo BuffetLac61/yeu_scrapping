@@ -13,19 +13,15 @@ You don’t need to install Python, Scrapy, or dependencies manually.
 The simplest way to run this project is using the prebuilt Docker image:
 
 ```bash
-docker run --rm your-dockerhub-username/yeu-voyage-planner <your_api_key> \
-  --start 2025-10-16T17:15:00 \
-  --end 2025-10-20T13:00:00
-```
+docker pull buffetlac61/yeu-voyage-planner
+docker run -it buffetlac61/yeu-voyage-planner 
 
-Example with a **fake key**:
-
-```bash
-docker run --rm your-dockerhub-username/yeu-voyage-planner
-xxxx-xxxx-xxxx \
-  --start 2025-10-16T17:15:00 \
-  --end 2025-10-20T13:00:00
+(Inside the docker bash terminal) 
+    python itinerator.py <your-sncf-api-key> --start 2025-10-16T17:15:00 --end 2025-10-20T13:00:00
 ```
+This is an example for a trip where you can be at Paris Montparnasse at 2025-10-16T17:15:00 and need to be back at Paris Montparnasse at 2025-10-20T13:00:00
+Adapt the start and end date to your usage.
+Note that sncf API doesn't give visibility beyond 20 days in advance compared to current date time.
 
 ✅ This will generate two JSON files:
 
@@ -58,7 +54,7 @@ pip install -r requirements.txt
 
 ## 📂 Project setup
 
-⚠️ This repo does **not** include a full Scrapy project (to keep it lightweight).
+⚠️ The git repo does **not** include a full Scrapy project (to keep it lightweight).
 You’ll need to create a Scrapy project yourself and copy in the provided files.
 
 ### 1. Create the Scrapy project
@@ -115,7 +111,16 @@ Final tree:
 
 ## 🏃 Usage (manual mode)
 
-### 1. Run the spider
+### 1. Run the main file
+Inside base directory
+
+```bash
+python itinerator.py <your-sncf-api-key> --start 2025-10-16T17:15:00 --end 2025-10-20T13:00:00
+```
+
+This is an example for a trip where you can be at Paris Montparnasse at 2025-10-16T17:15:00 and need to be back at Paris Montparnasse at 2025-10-20T13:00:00
+Adapt the start and end date to your usage.
+Note that sncf API doesn't give visibility beyond 20 days in advance compared to current date time.
 
 ### 2. Run the spider
 Inside yeu folder (no need to go further)
