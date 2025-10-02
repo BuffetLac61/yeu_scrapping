@@ -1,0 +1,10 @@
+
+🚀 Welcome to this Paris <> Île d'Yeu itinerary calculator!
+You can find your SNCF API key here: https://www.digital.sncf.com/startup/api
+
+📌 Usage:
+python itinerator.py <YOUR SNCF API KEY> --start 2025-10-16T17:15:00 --end 2025-10-20T13:00:00
+
+This will compute the best itinerary (spending as much time at Île d'Yeu as possible)
+if you are available at Paris Montparnasse on 2025-10-16T17:15:00
+and need to be back at Paris Montparnasse at 2025-10-20T13:00:00
